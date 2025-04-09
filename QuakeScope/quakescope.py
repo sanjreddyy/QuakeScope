@@ -26,7 +26,8 @@ st.markdown("""
 # Load data
 @st.cache_data
 def load_data():
-    df = pd.read_csv("QuakeScope/Earthquake_1995_2025.csv")
+    df = pd.read_csv("Earthquake_1995_2025.csv")
+
 
     df['year'] = pd.to_datetime(df['time'], errors='coerce', utc=True).dt.year
     return df.dropna(subset=['latitude', 'longitude', 'depth', 'mag', 'year'])
