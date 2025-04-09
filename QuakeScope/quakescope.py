@@ -13,9 +13,7 @@ st.set_page_config(page_title="QuakeScope", layout="wide")
 
 @st.cache_data
 def load_data():
-    df = pd.read_csv("../Earthquake_1995_2025.csv")
-
-
+    df = pd.read_csv("Earthquake_1995_2025.csv")  # ✅ fixed path here
     df['year'] = pd.to_datetime(df['time'], errors='coerce', utc=True).dt.year
     df = df.dropna(subset=['latitude', 'longitude', 'depth', 'mag', 'year'])
     return df
@@ -26,28 +24,28 @@ st.markdown("<h1 style='text-align: center;'>QuakeScope 🌋</h1>", unsafe_allow
 
 tab1, tab2 = st.tabs(["📘 About", "📊 Visualizations"])
 
-# === 📘 TAB 1: ABOUT ===
+# === 📘 ABOUT TAB ===
 with tab1:
     st.markdown("### Earthquake Data Explorer (1995–2025)")
     st.markdown("""
     Welcome to **QuakeScope**, your tool for exploring global earthquakes using interactive visualizations.
-    
+
     **Dataset Overview**:
     - Time range: **1995 to 2025**
     - Fields: *latitude, longitude, magnitude, depth, year, location*
     - Data source: USGS / global earthquake dataset
-    
+
     **Visual Tools**:
     - **2D Heatmap**: Displays earthquake density over time with smoothing filters
     - **3D Globe**: Shows location + severity using Plotly with filterable controls
-    
+
     **Built With**:
     - Streamlit • Cartopy • Plotly • NumPy • Matplotlib
-    
+
     > Tip: Use the selector below to switch between visualizations.
     """)
 
-# === 📊 TAB 2: VISUALIZATION SWITCHER ===
+# === 📊 VISUALIZATION TAB ===
 with tab2:
     vis_option = st.radio("Choose a Visualization", ["🗺️ 2D Heatmap", "🌐 3D Globe"], horizontal=True)
 
