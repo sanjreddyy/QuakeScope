@@ -11,19 +11,7 @@ import plotly.graph_objects as go
 
 # Page setup
 st.set_page_config(page_title="QuakeScope 🌍", layout="wide")
-st.markdown("""
-    <style>
-        /* Hide top-right GitHub & menu */
-        #MainMenu, header, .stDeployButton, .st-emotion-cache-6qob1r {
-            visibility: hidden;
-        }
 
-        /* Hide bottom right watermark & user info */
-        footer {
-            visibility: hidden;
-        }
-    </style>
-""", unsafe_allow_html=True)
 
 # Custom styles
 st.markdown("""
