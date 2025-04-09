@@ -67,7 +67,7 @@ with tab2:
             year_range = st.slider("Year Range", 1995, 2025, (1995, 2025), key="heatmap_year")
             depth_range = st.slider("Depth Range (km)", int(df['depth'].min()), int(df['depth'].max()), (0, 700), key="heatmap_depth")
             mag_range = st.slider("Magnitude Range", float(df['mag'].min()), float(df['mag'].max()), (5.0, 9.5), step=0.1, key="heatmap_mag")
-            colormap = st.selectbox("Color Gradient", ['YlOrRd', 'OrRd', 'YlGnBu', 'PuRd', 'Pink', 'Reds', 'Blues', 'YlGn'], key="heatmap_colormap")
+            colormap = st.selectbox("Color Gradient", ['YlOrRd', 'OrRd', 'YlGnBu', 'PuRd', 'Reds', 'Blues', 'YlGn'], key="heatmap_colormap")
 
         @st.cache_data
         def get_filtered_heatmap(df, year_range, depth_range, mag_range):
