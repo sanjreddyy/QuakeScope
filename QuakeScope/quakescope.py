@@ -9,49 +9,57 @@ from scipy.ndimage import gaussian_filter
 import base64
 import plotly.graph_objects as go
 
-st.set_page_config(page_title="QuakeScope", layout="wide")
+# Page setup
+st.set_page_config(page_title="QuakeScope 🌍", layout="wide")
 
+# Custom styles
+st.markdown("""
+    <style>
+        .main { background-color: #f9f9f9; }
+        h1 { text-align: center; font-size: 3rem; color: #4b4b4b; }
+        h3 { font-size: 1.5rem; color: #444; }
+        .sidebar .sidebar-content { background-color: #f0f2f6; }
+        footer {visibility: hidden;}
+    </style>
+""", unsafe_allow_html=True)
+
+# Load data
 @st.cache_data
 def load_data():
-    df = pd.read_csv("QuakeScope/Earthquake_1995_2025.csv")
-  # ✅ fixed path here
+    df = pd.read_csv("Earthquake_1995_2025.csv")
     df['year'] = pd.to_datetime(df['time'], errors='coerce', utc=True).dt.year
-    df = df.dropna(subset=['latitude', 'longitude', 'depth', 'mag', 'year'])
-    return df
+    return df.dropna(subset=['latitude', 'longitude', 'depth', 'mag', 'year'])
 
 df = load_data()
 
-st.markdown("<h1 style='text-align: center;'>QuakeScope 🌋</h1>", unsafe_allow_html=True)
+# App header
+st.markdown("<h1>QuakeScope 🌍</h1>", unsafe_allow_html=True)
 
+# Tabs
 tab1, tab2 = st.tabs(["📘 About", "📊 Visualizations"])
 
-# === 📘 ABOUT TAB ===
+# 📘 ABOUT TAB
 with tab1:
-    st.markdown("### Earthquake Data Explorer (1995–2025)")
     st.markdown("""
-    Welcome to **QuakeScope**, your tool for exploring global earthquakes using interactive visualizations.
-
-    **Dataset Overview**:
-    - Time range: **1995 to 2025**
-    - Fields: *latitude, longitude, magnitude, depth, year, location*
-    - Data source: USGS / global earthquake dataset
-
-    **Visual Tools**:
-    - **2D Heatmap**: Displays earthquake density over time with smoothing filters
-    - **3D Globe**: Shows location + severity using Plotly with filterable controls
-
-    **Built With**:
-    - Streamlit • Cartopy • Plotly • NumPy • Matplotlib
-
-    > Tip: Use the selector below to switch between visualizations.
+    ### Welcome to QuakeScope  
+    This interactive tool helps visualize global earthquake data from **1995 to 2025**.
+    
+    **What You Can Explore:**
+    - 🗺️ 2D Heatmap of Earthquake Density
+    - 🌐 3D Interactive Globe Visualization
+    
+    **Fields Used**: Latitude, Longitude, Magnitude, Depth, Year  
+    **Powered by**: Streamlit, Cartopy, Plotly, Pandas, Matplotlib
     """)
+    st.markdown("---")
 
-# === 📊 VISUALIZATION TAB ===
+# 📊 VISUALIZATION TAB
 with tab2:
-    vis_option = st.radio("Choose a Visualization", ["🗺️ 2D Heatmap", "🌐 3D Globe"], horizontal=True)
+    vis_option = st.radio("Choose Visualization", ["🗺️ 2D Heatmap", "🌐 3D Globe"], horizontal=True)
 
+    # === 2D HEATMAP ===
     if vis_option == "🗺️ 2D Heatmap":
-        st.markdown("### 2D Earthquake Heatmap")
+        st.markdown("### 2D Earthquake Density Map")
 
         with st.sidebar:
             st.header("🗺️ Heatmap Filters")
@@ -60,11 +68,15 @@ with tab2:
             mag_range = st.slider("Magnitude Range", float(df['mag'].min()), float(df['mag'].max()), (5.0, 9.5), step=0.1, key="heatmap_mag")
             colormap = st.selectbox("Color Gradient", ['YlOrRd', 'OrRd', 'YlGnBu', 'PuRd', 'Pink', 'Reds', 'Blues', 'YlGn'], key="heatmap_colormap")
 
-        filtered = df[
-            (df['year'] >= year_range[0]) & (df['year'] <= year_range[1]) &
-            (df['depth'] >= depth_range[0]) & (df['depth'] <= depth_range[1]) &
-            (df['mag'] >= mag_range[0]) & (df['mag'] <= mag_range[1])
-        ]
+        @st.cache_data
+        def get_filtered_heatmap(df, year_range, depth_range, mag_range):
+            return df[
+                (df['year'] >= year_range[0]) & (df['year'] <= year_range[1]) &
+                (df['depth'] >= depth_range[0]) & (df['depth'] <= depth_range[1]) &
+                (df['mag'] >= mag_range[0]) & (df['mag'] <= mag_range[1])
+            ]
+
+        filtered = get_filtered_heatmap(df, year_range, depth_range, mag_range)
 
         lon_bins = np.linspace(-180, 180, 360)
         lat_bins = np.linspace(-90, 90, 180)
@@ -73,7 +85,7 @@ with tab2:
         log_smoothed = np.log1p(smoothed)
         lon_grid, lat_grid = np.meshgrid(lon_bins, lat_bins)
 
-        fig = plt.figure(figsize=(20, 10))
+        fig = plt.figure(figsize=(16, 8))  # Slightly smaller for faster render
         ax = plt.axes(projection=ccrs.Robinson())
         ax.set_global()
         ax.coastlines(linewidth=0.6)
@@ -81,28 +93,21 @@ with tab2:
         ax.add_feature(cfeature.LAND, facecolor='white')
         ax.add_feature(cfeature.OCEAN, facecolor='#e6f0ff')
 
-        mesh = ax.pcolormesh(
-            lon_grid, lat_grid, log_smoothed,
-            cmap=colormap,
-            shading='auto',
-            transform=ccrs.PlateCarree(),
-            alpha=0.9
-        )
-
-        cb = fig.colorbar(mesh, orientation='horizontal', pad=0.06, shrink=0.8)
-        cb.set_label("Smoothed Earthquake Frequency (log scale)", fontsize=15)
+        mesh = ax.pcolormesh(lon_grid, lat_grid, log_smoothed, cmap=colormap, shading='auto',
+                             transform=ccrs.PlateCarree(), alpha=0.9)
+        cb = fig.colorbar(mesh, orientation='horizontal', pad=0.05, shrink=0.8)
+        cb.set_label("Smoothed Earthquake Frequency (log scale)", fontsize=12)
 
         buf = io.BytesIO()
-        fig.savefig(buf, format="png", dpi=100, bbox_inches="tight", pad_inches=0.05)
+        fig.savefig(buf, format="png", dpi=90, bbox_inches="tight", pad_inches=0.05)
         plt.close(fig)
 
         st.markdown(
-            "<div style='display: flex; justify-content: center;'>"
-            "<img src='data:image/png;base64,{}' width='1000'/>"
-            "</div>".format(base64.b64encode(buf.getvalue()).decode()),
-            unsafe_allow_html=True
-        )
+            f"<div style='text-align: center;'>"
+            f"<img src='data:image/png;base64,{base64.b64encode(buf.getvalue()).decode()}' width='950'/>"
+            f"</div>", unsafe_allow_html=True)
 
+    # === 3D GLOBE ===
     elif vis_option == "🌐 3D Globe":
         st.markdown("### Interactive 3D Earthquake Globe")
 
@@ -120,11 +125,15 @@ with tab2:
             mag_range = st.slider("Magnitude Range", float(df['mag'].min()), float(df['mag'].max()), (5.0, 9.5), key="globe_mag")
             color_by = st.radio("Color Points By", ["Depth", "Magnitude"], key="globe_color_by")
 
-        filtered_df = df[
-            year_mask &
-            (df['depth'] >= depth_range[0]) & (df['depth'] <= depth_range[1]) &
-            (df['mag'] >= mag_range[0]) & (df['mag'] <= mag_range[1])
-        ]
+        @st.cache_data
+        def get_filtered_globe(df, mask, depth_range, mag_range):
+            return df[
+                mask &
+                (df['depth'] >= depth_range[0]) & (df['depth'] <= depth_range[1]) &
+                (df['mag'] >= mag_range[0]) & (df['mag'] <= mag_range[1])
+            ]
+
+        filtered_df = get_filtered_globe(df, year_mask, depth_range, mag_range)
 
         color_field = 'depth' if color_by == 'Depth' else 'mag'
         colorscale = 'Viridis' if color_by == 'Depth' else 'Turbo'
