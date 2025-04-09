@@ -13,7 +13,8 @@ st.set_page_config(page_title="QuakeScope", layout="wide")
 
 @st.cache_data
 def load_data():
-    df = pd.read_csv("Earthquake_1995_2025.csv")  # ✅ fixed path here
+    df = pd.read_csv("QuakeScope/Earthquake_1995_2025.csv")
+  # ✅ fixed path here
     df['year'] = pd.to_datetime(df['time'], errors='coerce', utc=True).dt.year
     df = df.dropna(subset=['latitude', 'longitude', 'depth', 'mag', 'year'])
     return df
