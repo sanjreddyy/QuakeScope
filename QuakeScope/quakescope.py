@@ -295,7 +295,7 @@ with tab5:
     ))
 
     fig_risk.update_layout(
-        title="Earthquake Risk Zones (DBSCAN + RandomForest)",
+        #title="Earthquake Risk Zones (DBSCAN + RandomForest)",
         mapbox=dict(style="open-street-map", center=dict(lat=0, lon=0), zoom=1),
         margin=dict(r=0, t=80, l=0, b=0),
         legend=dict(x=0, xanchor='left'),
