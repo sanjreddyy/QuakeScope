@@ -1,4 +1,3 @@
-# Imports
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -21,19 +20,18 @@ st.markdown("""
         h1 { text-align: center; font-size: 3rem; color: #4b4b4b; }
         h3 { font-size: 1.5rem; color: #444; }
         .sidebar .sidebar-content { background-color: #f0f2f6; }
-        footer, #MainMenu, header {visibility: hidden;}
+        footer, #MainMenu, header, .stDeployButton { visibility: hidden; }
     </style>
 """, unsafe_allow_html=True)
 
-# Load data
+# Load main dataset
 @st.cache_data
 def load_data():
     df = pd.read_csv("QuakeScope/Earthquake_1995_2025.csv")
     df['year'] = pd.to_datetime(df['time'], errors='coerce', utc=True).dt.year
     return df.dropna(subset=['latitude', 'longitude', 'depth', 'mag', 'year'])
 
-df = load_data()
-
+# Load animation-specific dataset
 @st.cache_data
 def load_sorted_data():
     df_sorted = pd.read_csv("QuakeScope/Sorted_Earthquake_1995_2025.csv")
@@ -42,46 +40,55 @@ def load_sorted_data():
     df_sorted['year'] = df_sorted['time'].dt.year
     return df_sorted
 
+df = load_data()
 df_sorted = load_sorted_data()
 
 # App header
 st.markdown("<h1>QuakeScope 🌍</h1>", unsafe_allow_html=True)
 
 # Tabs
-about_tab, vis_tab = st.tabs(["\ud83d\udcd8 About", "\ud83d\udcca Visualizations"])
+tab1, tab2 = st.tabs(["📘 About", "📊 Visualizations"])
 
-# === ABOUT TAB ===
-with about_tab:
+# 📘 ABOUT TAB
+with tab1:
     st.markdown("""
-    ### Welcome to QuakeScope
+    ### Welcome to QuakeScope  
     This interactive tool helps visualize global earthquake data from **1995 to 2025**.
-
+    
     **What You Can Explore:**
-    - \ud83d\udcfd\ufe0f 2D Heatmap of Earthquake Density
-    - \ud83c\udf10 3D Interactive Globe Visualization
-    - \ud83c\udf07 Earthquake Time-lapse Animation
-
+    - 🗺️ 2D Heatmap of Earthquake Density
+    - 🌐 3D Interactive Globe Visualization
+    - 🌇 Time-lapse Animation of Global Quakes
+    
     **Fields Used**: Latitude, Longitude, Magnitude, Depth, Year  
     **Powered by**: Streamlit, Cartopy, Plotly, Pandas, Matplotlib
     """)
+    st.markdown("---")
 
-# === VISUALIZATIONS TAB ===
-with vis_tab:
-    vis_option = st.radio("Choose Visualization", ["\ud83d\udcfd\ufe0f 2D Heatmap", "\ud83c\udf10 3D Globe", "\ud83c\udf07 Time-lapse Animation"], horizontal=True)
+# 📊 VISUALIZATION TAB
+with tab2:
+    vis_option = st.radio("Choose Visualization", ["🗺️ 2D Heatmap", "🌐 3D Globe", "🌇 Time-lapse Animation"], horizontal=True)
 
-    if vis_option == "\ud83d\udcfd\ufe0f 2D Heatmap":
+    # === 2D HEATMAP ===
+    if vis_option == "🗺️ 2D Heatmap":
+        st.markdown("### 2D Earthquake Density Map")
+
         with st.sidebar:
-            st.header("\ud83d\udcfd\ufe0f Heatmap Filters")
+            st.header("🗺️ Heatmap Filters")
             year_range = st.slider("Year Range", 1995, 2025, (1995, 2025), key="heatmap_year")
             depth_range = st.slider("Depth Range (km)", int(df['depth'].min()), int(df['depth'].max()), (0, 700), key="heatmap_depth")
             mag_range = st.slider("Magnitude Range", float(df['mag'].min()), float(df['mag'].max()), (5.0, 9.5), step=0.1, key="heatmap_mag")
             colormap = st.selectbox("Color Gradient", ['YlOrRd', 'OrRd', 'YlGnBu', 'PuRd', 'Reds', 'Blues', 'YlGn'], key="heatmap_colormap")
 
-        filtered = df[
-            (df['year'] >= year_range[0]) & (df['year'] <= year_range[1]) &
-            (df['depth'] >= depth_range[0]) & (df['depth'] <= depth_range[1]) &
-            (df['mag'] >= mag_range[0]) & (df['mag'] <= mag_range[1])
-        ]
+        @st.cache_data
+        def get_filtered_heatmap(df, year_range, depth_range, mag_range):
+            return df[
+                (df['year'] >= year_range[0]) & (df['year'] <= year_range[1]) &
+                (df['depth'] >= depth_range[0]) & (df['depth'] <= depth_range[1]) &
+                (df['mag'] >= mag_range[0]) & (df['mag'] <= mag_range[1])
+            ]
+
+        filtered = get_filtered_heatmap(df, year_range, depth_range, mag_range)
 
         lon_bins = np.linspace(-180, 180, 360)
         lat_bins = np.linspace(-90, 90, 180)
@@ -107,11 +114,17 @@ with vis_tab:
         fig.savefig(buf, format="png", dpi=90, bbox_inches="tight", pad_inches=0.05)
         plt.close(fig)
 
-        st.markdown(f"<div style='text-align: center;'><img src='data:image/png;base64,{base64.b64encode(buf.getvalue()).decode()}' width='950'/></div>", unsafe_allow_html=True)
+        st.markdown(
+            f"<div style='text-align: center;'>"
+            f"<img src='data:image/png;base64,{base64.b64encode(buf.getvalue()).decode()}' width='950'/>"
+            f"</div>", unsafe_allow_html=True)
 
-    elif vis_option == "\ud83c\udf10 3D Globe":
+    # === 3D GLOBE ===
+    elif vis_option == "🌐 3D Globe":
+        st.markdown("### Interactive 3D Earthquake Globe")
+
         with st.sidebar:
-            st.header("\ud83c\udf10 Globe Filters")
+            st.header("🌐 Globe Filters")
             year_filter_type = st.radio("Filter by:", ["Year Range", "Single Year"], key="globe_filter_type")
             if year_filter_type == "Year Range":
                 year_range = st.slider("Select Year Range", 1995, 2025, (1995, 2025), key="globe_year_range")
@@ -124,11 +137,15 @@ with vis_tab:
             mag_range = st.slider("Magnitude Range", float(df['mag'].min()), float(df['mag'].max()), (5.0, 9.5), key="globe_mag")
             color_by = st.radio("Color Points By", ["Depth", "Magnitude"], key="globe_color_by")
 
-        filtered_df = df[
-            year_mask &
-            (df['depth'] >= depth_range[0]) & (df['depth'] <= depth_range[1]) &
-            (df['mag'] >= mag_range[0]) & (df['mag'] <= mag_range[1])
-        ]
+        @st.cache_data
+        def get_filtered_globe(df, mask, depth_range, mag_range):
+            return df[
+                mask &
+                (df['depth'] >= depth_range[0]) & (df['depth'] <= depth_range[1]) &
+                (df['mag'] >= mag_range[0]) & (df['mag'] <= mag_range[1])
+            ]
+
+        filtered_df = get_filtered_globe(df, year_mask, depth_range, mag_range)
 
         color_field = 'depth' if color_by == 'Depth' else 'mag'
         colorscale = 'Viridis' if color_by == 'Depth' else 'Turbo'
@@ -174,18 +191,20 @@ with vis_tab:
 
         st.plotly_chart(fig, use_container_width=True)
 
-    elif vis_option == "\ud83c\udf07 Time-lapse Animation":
+    # === ANIMATED MAP ===
+    elif vis_option == "🌇 Time-lapse Animation":
+        st.markdown("### Animated Global Earthquake Time-lapse")
+
         with st.sidebar:
-            st.header("\ud83c\udf07 Animation Filters")
+            st.header("🌇 Animation Filters")
             min_year = int(df_sorted['year'].min())
             max_year = int(df_sorted['year'].max())
-            year_range = st.slider("Select Year Range:", min_year, max_year, (min_year, max_year), step=1)
+            year_range = st.slider("Select Year Range:", min_year, max_year, (min_year, max_year), step=1, key="animation_year")
 
-        df_anim = df_sorted[(df_sorted['year'] >= year_range[0]) & (df_sorted['year'] <= year_range[1])]
-        st.write(f"Showing earthquakes from {year_range[0]} to {year_range[1]}")
+        df_filtered = df_sorted[(df_sorted['year'] >= year_range[0]) & (df_sorted['year'] <= year_range[1])]
 
         fig = px.scatter_geo(
-            df_anim,
+            df_filtered,
             lat="latitude",
             lon="longitude",
             color="mag",
@@ -198,4 +217,5 @@ with vis_tab:
         )
 
         fig.update_traces(marker=dict(sizemode='area', opacity=0.6))
+
         st.plotly_chart(fig, use_container_width=True)
