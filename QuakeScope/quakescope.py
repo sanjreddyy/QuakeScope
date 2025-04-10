@@ -16,7 +16,7 @@ from streamlit_folium import st_folium
 import re
 
 # --- Page Setup ---
-st.set_page_config(page_title="QuakeScope 🌍", layout="wide")
+st.set_page_config(page_title="Earthquake Risk Analysis and Prediction 🌍", layout="wide")
 st.markdown("""
     <style>
         .main { background-color: #f9f9f9; }
@@ -48,7 +48,7 @@ tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
 with tab1:
     st.markdown("<h1>QuakeScope 🌍</h1>", unsafe_allow_html=True)
     st.markdown("""
-    Welcome to **QuakeScope** — an interactive visualization of global earthquake data from **1995 to 2025**.
+    Welcome to an interactive visualization of global earthquake data from **1995 to 2025**.
 
     **Explore:**
     - 🗺️ 2D Heatmap of Earthquake Density  
