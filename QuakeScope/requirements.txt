@@ -6,3 +6,5 @@ cartopy
 scipy
 plotly
 scikit-learn
+folium
+streamlit-folium
