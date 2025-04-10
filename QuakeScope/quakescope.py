@@ -34,7 +34,7 @@ def load_data():
 # Load animation-specific dataset
 @st.cache_data
 def load_sorted_data():
-    df_sorted = pd.read_csv("QuakeScope/Sorted_Earthquake_1995_2025.csv")
+    df_sorted = pd.read_csv("QuakeScope/Earthquake_1995_2025.csv")
     df_sorted['time'] = pd.to_datetime(df_sorted['time'], errors='coerce')
     df_sorted = df_sorted.dropna(subset=['time', 'latitude', 'longitude', 'mag'])
     df_sorted['year'] = df_sorted['time'].dt.year
