@@ -99,7 +99,7 @@ with tab2:
     fig.savefig(buf, format="png", dpi=90, bbox_inches="tight", pad_inches=0.05)
     plt.close(fig)
 
-    st.image(f"data:image/png;base64,{base64.b64encode(buf.getvalue()).decode()}", use_column_width=True)
+    st.image(f"data:image/png;base64,{base64.b64encode(buf.getvalue()).decode()}", use_container_width=True)
 # --- 🌐 3D Globe Tab ---
 with tab3:
     st.markdown("### 🌐 Interactive 3D Earthquake Globe (2015–2025)")
