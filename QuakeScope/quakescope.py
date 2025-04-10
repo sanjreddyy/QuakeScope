@@ -28,11 +28,11 @@ st.markdown("""
 # --- Load Data ---
 @st.cache_data
 def load_data():
-    df1 = pd.read_csv("Earthquake_1995_2025.csv")
+    df1 = pd.read_csv("QuakeScope/Earthquake_1995_2025.csv")
     df1['year'] = pd.to_datetime(df1['time'], errors='coerce', utc=True).dt.year
     df1 = df1.dropna(subset=['latitude', 'longitude', 'depth', 'mag', 'year'])
 
-    df2 = pd.read_csv("Sorted_Earthquake_1995_2025.csv", parse_dates=['time'], infer_datetime_format=True)
+    df2 = pd.read_csv("QuakeScope/Earthquake_1995_2025.csv", parse_dates=['time'], infer_datetime_format=True)
     return df1, df2
 
 df_main, df_sorted = load_data()
