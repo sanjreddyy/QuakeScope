@@ -349,6 +349,26 @@ with tab5:
         legend=dict(x=0, xanchor='left')
     )
     st.plotly_chart(fig_line, use_container_width=True)
+    updatemenus=[
+    dict(
+        buttons=[
+            dict(label="All", method="update", args=[{"visible": [True, True, True, True]}, {"title": "All Risk Events"}]),
+            dict(label="Low", method="update", args=[{"visible": [True, False, False, True]}, {"title": "Low Risk"}]),
+            dict(label="Medium", method="update", args=[{"visible": [False, True, False, True]}, {"title": "Medium Risk"}]),
+            dict(label="High", method="update", args=[{"visible": [False, False, True, True]}, {"title": "High Risk"}]),
+        ],
+        direction="right",
+        pad={"r": 10, "t": 10},
+        type="buttons",
+        showactive=True,
+        x=0.5,
+        xanchor="center",
+        y=1.15,
+        yanchor="top"
+    )
+]
+
+
 with tab6:
     st.markdown("### 📍 Key Earthquake Events Map")
 
@@ -382,7 +402,11 @@ with tab6:
         lon = events_dict[selected_event]['longitude']
         base_map = folium.Map(location=[lat, lon], zoom_start=5)
         folium.TileLayer('openstreetmap').add_to(base_map)
-        folium.TileLayer('Stamen Terrain').add_to(base_map)
+        folium.TileLayer(
+            tiles='Stamen Terrain',
+            attr='Map tiles by Stamen Design, CC BY 3.0 — Map data © OpenStreetMap contributors'
+        ).add_to(base_map)
+
         folium.TileLayer('CartoDB positron').add_to(base_map)
         folium.LayerControl().add_to(base_map)
         for event, info in events_dict.items():
