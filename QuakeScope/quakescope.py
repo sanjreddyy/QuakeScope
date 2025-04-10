@@ -246,12 +246,10 @@ with tab5:
         st.error(f"No earthquakes with magnitude ≥ {risk_mag_threshold}.")
         st.stop()
 
-    # --- Clustering with DBSCAN ---
     db = DBSCAN(eps=0.5, min_samples=5)
     df_risk['cluster'] = db.fit_predict(df_risk[['latitude', 'longitude']])
     df_risk['high_risk'] = df_risk['cluster'].apply(lambda x: 1 if x != -1 else 0)
 
-    # --- Risk prediction using RandomForest ---
     X = df_risk[['latitude', 'longitude', 'mag']]
     y = df_risk['high_risk']
     clf = RandomForestClassifier(n_estimators=100, random_state=42)
@@ -261,55 +259,87 @@ with tab5:
     df_risk['risk_prob'] = clf.predict_proba(X)[:, prob_index]
     df_risk['risk_label'] = df_risk['risk_prob'].apply(lambda p: 'Low' if p < 0.33 else 'Medium' if p < 0.66 else 'High')
 
-    # --- Create Risk Grid for Contour ---
     lat_grid = np.linspace(df['latitude'].min(), df['latitude'].max(), 100)
     lon_grid = np.linspace(df['longitude'].min(), df['longitude'].max(), 100)
     g_lat, g_lon = np.meshgrid(lat_grid, lon_grid)
     grid_df = pd.DataFrame({'latitude': g_lat.ravel(), 'longitude': g_lon.ravel(), 'mag': risk_mag_threshold})
-
-    if 1 in clf.classes_:
-        grid_df['risk_prob'] = clf.predict_proba(grid_df[['latitude','longitude','mag']])[:, prob_index]
-    else:
-        grid_df['risk_prob'] = 0.0
-
-    def map_label(prob):
-        return 'Low' if prob < 0.33 else 'Medium' if prob < 0.66 else 'High'
-    
-    grid_df['risk_label'] = grid_df['risk_prob'].apply(map_label)
+    grid_df['risk_prob'] = clf.predict_proba(grid_df[['latitude','longitude','mag']])[:, prob_index]
+    grid_df['risk_label'] = grid_df['risk_prob'].apply(lambda p: 'Low' if p < 0.33 else 'Medium' if p < 0.66 else 'High')
     mapping = {'Low': 1, 'Medium': 2, 'High': 3}
     grid_df['risk_num'] = grid_df['risk_label'].map(mapping)
     risk_num_grid = grid_df['risk_num'].values.reshape(g_lat.shape)
 
-    # --- Separate data points by label ---
     df_low = df_risk[df_risk['risk_label'] == 'Low']
     df_medium = df_risk[df_risk['risk_label'] == 'Medium']
     df_high = df_risk[df_risk['risk_label'] == 'High']
 
-    # --- Plot Risk Map ---
-    fig_risk = go.Figure([
-        go.Scattermapbox(lat=df_low['latitude'], lon=df_low['longitude'], mode='markers',
-                         marker=dict(size=8, color='blue'), name='Low Risk'),
-        go.Scattermapbox(lat=df_medium['latitude'], lon=df_medium['longitude'], mode='markers',
-                         marker=dict(size=8, color='orange'), name='Medium Risk'),
-        go.Scattermapbox(lat=df_high['latitude'], lon=df_high['longitude'], mode='markers',
-                         marker=dict(size=8, color='red'), name='High Risk'),
-        go.Contour(x=lon_grid, y=lat_grid, z=risk_num_grid,
-                   colorscale=[[0.0, 'blue'], [0.5, 'orange'], [1.0, 'red']],
-                   opacity=0.3, showscale=True,
-                   colorbar=dict(title="Risk Level", tickvals=[1,2,3], ticktext=['Low','Medium','High']))
-    ])
+    # Risk map figure with update buttons and clean layout
+    fig_risk = go.Figure()
+
+    # Add risk category markers
+    fig_risk.add_trace(go.Scattermapbox(lat=df_low['latitude'], lon=df_low['longitude'],
+        mode='markers', marker=dict(size=8, color='blue'), name='Low Risk'))
+    fig_risk.add_trace(go.Scattermapbox(lat=df_medium['latitude'], lon=df_medium['longitude'],
+        mode='markers', marker=dict(size=8, color='orange'), name='Medium Risk'))
+    fig_risk.add_trace(go.Scattermapbox(lat=df_high['latitude'], lon=df_high['longitude'],
+        mode='markers', marker=dict(size=8, color='red'), name='High Risk'))
+
+    # Add contour
+    fig_risk.add_trace(go.Contour(
+        x=lon_grid, y=lat_grid, z=risk_num_grid,
+        colorscale=[[0.0, 'blue'], [0.5, 'orange'], [1.0, 'red']],
+        opacity=0.3,
+        coloraxis="coloraxis",
+        showscale=True,
+        contours=dict(showlines=False)
+    ))
 
     fig_risk.update_layout(
         title="Earthquake Risk Zones (DBSCAN + RandomForest)",
         mapbox=dict(style="open-street-map", center=dict(lat=0, lon=0), zoom=1),
-        margin=dict(r=0, t=50, l=0, b=0)
+        margin=dict(r=0, t=80, l=0, b=0),
+        legend=dict(x=0, xanchor='left'),
+        coloraxis_colorbar=dict(
+            title="Risk Level",
+            tickvals=[1, 2, 3],
+            ticktext=["Low", "Medium", "High"],
+            x=1.02,
+            y=0.5,
+            len=0.75
+        ),
+        updatemenus=[
+            dict(
+                buttons=[
+                    dict(label="All", method="update",
+                         args=[{"visible": [True, True, True, True]},
+                               {"title": "All Earthquake Risk Events"}]),
+                    dict(label="Low", method="update",
+                         args=[{"visible": [True, False, False, True]},
+                               {"title": "Low Risk Earthquake Events"}]),
+                    dict(label="Medium", method="update",
+                         args=[{"visible": [False, True, False, True]},
+                               {"title": "Medium Risk Earthquake Events"}]),
+                    dict(label="High", method="update",
+                         args=[{"visible": [False, False, True, True]},
+                               {"title": "High Risk Earthquake Events"}])
+                ],
+                direction="right",
+                pad={"r": 10, "t": 10},
+                type="buttons",
+                showactive=True,
+                x=0.5,
+                xanchor="center",
+                y=1.18,
+                yanchor="top"
+            )
+        ]
     )
+
     st.plotly_chart(fig_risk, use_container_width=True)
 
-    # --- 📊 Bar Chart: Risk by Region ---
+    # --- 📊 Risk by Region ---
     st.markdown("### 📊 Risk Level by Region")
 
-    # Define regions
     mid_lat = (df['latitude'].min() + df['latitude'].max()) / 2
     mid_lon = (df['longitude'].min() + df['longitude'].max()) / 2
 
@@ -330,7 +360,7 @@ with tab5:
     fig_bar.update_layout(barmode='group', xaxis_title="Region", yaxis_title="Event Count", title="Risk by Region")
     st.plotly_chart(fig_bar, use_container_width=True)
 
-    # --- 🔮 Simulated Forecast ---
+    # --- 🔮 Seismic Forecast ---
     st.markdown("### 🔮 Seismic Risk Forecast (2025–2035)")
     years = np.arange(2025, 2035)
     low_vals = 0.7 * np.exp(-0.1 * (years - 2025))
@@ -349,24 +379,6 @@ with tab5:
         legend=dict(x=0, xanchor='left')
     )
     st.plotly_chart(fig_line, use_container_width=True)
-    updatemenus=[
-    dict(
-        buttons=[
-            dict(label="All", method="update", args=[{"visible": [True, True, True, True]}, {"title": "All Risk Events"}]),
-            dict(label="Low", method="update", args=[{"visible": [True, False, False, True]}, {"title": "Low Risk"}]),
-            dict(label="Medium", method="update", args=[{"visible": [False, True, False, True]}, {"title": "Medium Risk"}]),
-            dict(label="High", method="update", args=[{"visible": [False, False, True, True]}, {"title": "High Risk"}]),
-        ],
-        direction="right",
-        pad={"r": 10, "t": 10},
-        type="buttons",
-        showactive=True,
-        x=0.5,
-        xanchor="center",
-        y=1.15,
-        yanchor="top"
-    )
-]
 
 
 with tab6:
