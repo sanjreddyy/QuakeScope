@@ -23,7 +23,7 @@ def load_main_data():
 
 @st.cache_data
 def load_sorted_data():
-    df = pd.read_csv("QuakeScope/Sorted_Earthquake_1995_2025.csv", parse_dates=['time'], infer_datetime_format=True)
+    df = pd.read_csv("QuakeScope/Earthquake_1995_2025.csv", parse_dates=['time'], infer_datetime_format=True)
     return df
 
 df_main = load_main_data()
